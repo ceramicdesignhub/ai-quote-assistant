@@ -94,7 +94,7 @@ button {
 .hero {
   display: flex;
   justify-content: space-between;
-  align-items: end;
+  align-items: flex-end;
   gap: 40px;
   padding: 34px 0 42px;
 }
@@ -354,3 +354,4 @@ footer {
     padding: 20px 16px 28px;
   }
 }
+

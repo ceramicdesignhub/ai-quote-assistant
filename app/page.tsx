@@ -1,10 +1,44 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+
+const EXAMPLE_ENQUIRY =
+  "Hi, I need a quote to pressure wash a 3-bedroom house in Austin. Please include the driveway and tell me your earliest available date.";
 
 export default function Home() {
   const [enquiry, setEnquiry] = useState("");
   const [showQuote, setShowQuote] = useState(false);
+  const [isApproved, setIsApproved] = useState(false);
+  const [quoteNumber, setQuoteNumber] = useState(0);
+  const enquiryField = useRef<HTMLTextAreaElement>(null);
+  const canGenerate = enquiry.trim().length > 0;
+
+  function clearEnquiry() {
+    setEnquiry("");
+    setShowQuote(false);
+    setIsApproved(false);
+  }
+
+  function useExample() {
+    setEnquiry(EXAMPLE_ENQUIRY);
+    setShowQuote(false);
+    setIsApproved(false);
+    enquiryField.current?.focus();
+  }
+
+  function generateQuote() {
+    if (!canGenerate) return;
+
+    setQuoteNumber((current) => current + 1);
+    setShowQuote(true);
+    setIsApproved(false);
+  }
+
+  function editQuote() {
+    setShowQuote(false);
+    setIsApproved(false);
+    enquiryField.current?.focus();
+  }
 
   return (
     <main style={styles.page}>
@@ -45,23 +79,33 @@ export default function Home() {
           </div>
 
           <textarea
+            ref={enquiryField}
             value={enquiry}
             onChange={(e) => setEnquiry(e.target.value)}
+            aria-label="Customer enquiry"
             placeholder="Example: Hi, I need a quote to pressure wash a 3-bedroom house in Austin. Please include the driveway and tell me your earliest available date..."
             style={styles.textarea}
           />
 
           <div style={styles.actions}>
             <button
-              onClick={() => setEnquiry("")}
+              onClick={useExample}
               style={styles.secondaryButton}
             >
+              Use example
+            </button>
+
+            <button onClick={clearEnquiry} style={styles.secondaryButton}>
               Clear
             </button>
 
             <button
-              onClick={() => setShowQuote(true)}
-              style={styles.primaryButton}
+              onClick={generateQuote}
+              disabled={!canGenerate}
+              style={{
+                ...styles.primaryButton,
+                ...(canGenerate ? {} : styles.disabledButton),
+              }}
             >
               Generate quote →
             </button>
@@ -99,7 +143,9 @@ export default function Home() {
                   <span>Morgan Property Services</span>
                 </div>
 
-                <small style={styles.muted}>DRAFT #QP-001</small>
+                <small style={styles.muted}>
+                  DRAFT #QP-{String(quoteNumber).padStart(3, "0")}
+                </small>
               </div>
 
               <div style={styles.project}>
@@ -130,11 +176,26 @@ export default function Home() {
               </div>
 
               <div style={styles.actions}>
-                <button style={styles.secondaryButton}>Edit</button>
-                <button style={styles.primaryButton}>
-                  Approve quote
+                <button onClick={editQuote} style={styles.secondaryButton}>
+                  Edit enquiry
+                </button>
+                <button
+                  onClick={() => setIsApproved(true)}
+                  disabled={isApproved}
+                  style={{
+                    ...styles.primaryButton,
+                    ...(isApproved ? styles.disabledButton : {}),
+                  }}
+                >
+                  {isApproved ? "Quote approved" : "Approve quote"}
                 </button>
               </div>
+
+              {isApproved && (
+                <p role="status" style={styles.approvalNote}>
+                  Quote approved — it’s ready to send.
+                </p>
+              )}
             </div>
           )}
         </div>
@@ -301,6 +362,11 @@ const styles: Record<string, React.CSSProperties> = {
     marginTop: "13px",
   },
 
+  disabledButton: {
+    cursor: "not-allowed",
+    opacity: 0.5,
+  },
+
   empty: {
     minHeight: "370px",
     display: "flex",
@@ -372,6 +438,13 @@ const styles: Record<string, React.CSSProperties> = {
     paddingTop: "15px",
     fontSize: "18px",
     fontWeight: 800,
+  },
+
+  approvalNote: {
+    color: "#17634f",
+    fontSize: "12px",
+    fontWeight: 700,
+    margin: "14px 0 0",
   },
 
   footer: {
