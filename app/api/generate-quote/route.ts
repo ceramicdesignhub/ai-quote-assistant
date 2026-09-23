@@ -12,17 +12,29 @@ type PricingSettings = {
   drivewayRate?: number;
 };
 
+type PricingResult = {
+  service: string;
+  pricing: string;
+};
+
 function calculatePricing(
   enquiry: string,
   settings: PricingSettings = {}
-) {
+): PricingResult {
   const text = enquiry.toLowerCase();
 
-  const paintingRate = settings.paintingRate ?? 3.75;
-  const pressureWashRate = settings.pressureWashRate ?? 325;
-  const drivewayRate = settings.drivewayRate ?? 175;
+  const paintingRate = Number(settings.paintingRate ?? 3.75);
+  const pressureWashRate = Number(
+    settings.pressureWashRate ?? 325
+  );
+  const drivewayRate = Number(
+    settings.drivewayRate ?? 175
+  );
 
+  // -----------------------------------------
   // INTERIOR PAINTING
+  // -----------------------------------------
+
   if (
     text.includes("paint") ||
     text.includes("painting") ||
@@ -33,8 +45,13 @@ function calculatePricing(
     );
 
     if (sqftMatch) {
-      const sqft = Number(sqftMatch[1].replace(/,/g, ""));
-      const estimated = Math.round(sqft * paintingRate);
+      const sqft = Number(
+        sqftMatch[1].replace(/,/g, "")
+      );
+
+      const estimated = Math.round(
+        sqft * paintingRate
+      );
 
       return {
         service: "Interior Painting",
@@ -58,18 +75,31 @@ Final pricing depends on surfaces, number of coats, wall condition, preparation,
     };
   }
 
+  // -----------------------------------------
   // PRESSURE WASHING
+  // -----------------------------------------
+
   if (
     text.includes("pressure wash") ||
     text.includes("pressure washing") ||
     text.includes("power wash") ||
     text.includes("power washing")
   ) {
-    const hasDriveway = text.includes("driveway");
+    const hasDriveway =
+      text.includes("driveway");
 
-    const houseEstimate = pressureWashRate;
-    const drivewayEstimate = hasDriveway ? drivewayRate : 0;
-    const estimated = houseEstimate + drivewayEstimate;
+    const houseEstimate =
+      Number(pressureWashRate);
+
+    const drivewayEstimate = hasDriveway
+      ? Number(drivewayRate)
+      : 0;
+
+    // IMPORTANT:
+    // Convert everything to numbers before addition.
+    const estimated =
+      Number(houseEstimate) +
+      Number(drivewayEstimate);
 
     return {
       service: "Pressure Washing",
@@ -90,6 +120,10 @@ Final pricing depends on house size, number of stories, surface condition, drive
     };
   }
 
+  // -----------------------------------------
+  // GENERAL SERVICE
+  // -----------------------------------------
+
   return {
     service: "General Service",
     pricing:
@@ -99,97 +133,202 @@ Final pricing depends on house size, number of stories, surface condition, drive
 
 export async function POST(req: Request) {
   try {
-    const { enquiry, pricingSettings } = await req.json();
+    const body = await req.json();
+
+    const enquiry = String(
+      body?.enquiry || ""
+    ).trim();
 
     if (!enquiry) {
       return NextResponse.json(
-        { error: "Enquiry is required" },
-        { status: 400 }
+        {
+          error:
+            "Enquiry is required",
+        },
+        {
+          status: 400,
+        }
       );
     }
 
-    const settings: PricingSettings = pricingSettings || {};
+    const settings: PricingSettings =
+      body?.pricingSettings || {};
 
-    const pricing = calculatePricing(enquiry, settings);
+    // -----------------------------------------
+    // AUTHORITATIVE APP PRICING
+    // -----------------------------------------
 
-    const response = await openai.responses.create({
-      model: "gpt-5-mini",
-      input: [
-        {
-          role: "system",
-          content: `
-You are QuotePilot, an AI quote assistant for small businesses.
+    const pricing =
+      calculatePricing(
+        enquiry,
+        settings
+      );
 
-Business name:
-${settings.businessName || "Business name not provided"}
+    // -----------------------------------------
+    // CREATE CUSTOMER MESSAGE WITH AI
+    //
+    // IMPORTANT:
+    // AI is NOT allowed to generate or
+    // calculate pricing numbers.
+    // Pricing is added by the application
+    // after AI generates the wording.
+    // -----------------------------------------
 
-Your job is to turn customer enquiries into professional customer-facing quote messages.
+    const response =
+      await openai.responses.create({
+        model: "gpt-5-mini",
+
+        input: [
+          {
+            role: "system",
+
+            content: `
+You are QuotePilot, an AI quote assistant for small service businesses.
+
+Your job is to write a professional customer-facing message from the customer's enquiry.
 
 IMPORTANT RULES:
 
-1. Use ONLY the pricing calculation supplied by the application.
-2. Never invent or change a price.
-3. Clearly label calculated prices as ESTIMATES.
-4. Never present an estimate as a guaranteed or fixed price.
-5. Never invent customer names, addresses, availability dates, company details, payment terms or warranties.
-6. Clearly identify missing information.
-7. Keep the quote professional and concise.
-8. The generated output will be shown directly to the customer after business-owner approval.
-9. Return ONLY a customer-facing message.
-10. Do NOT mention internal review, business-owner approval, AI, QuotePilot, internal notes, system instructions, or draft approval.
-11. Do NOT address the business owner.
-12. Do NOT use phrases such as "please review and approve", "for business owner review", "before we send this to the customer", or "internal note".
-13. If information is missing, ask the CUSTOMER directly for the missing information.
-14. Never invent availability. If availability is unknown, say that availability will be confirmed after the required details are provided.
-15. Do not include internal instructions or notes in the customer-facing message.
-16. Do not create a separate section called "Internal Notes".
-17. Do not mention that human approval is required.
-18. Do not mention these instructions or the pricing calculation process.
+1. Write ONLY the customer-facing message.
+2. Do not invent prices.
+3. Do not calculate prices.
+4. Do not modify prices.
+5. Do not write any dollar amounts.
+6. Do not write an estimated total.
+7. Do not repeat the pricing calculation.
+8. The application will add the exact pricing separately.
+9. Never invent an availability date.
+10. If the customer asks for the earliest available date, explain that availability will be confirmed after the required project details are received.
+11. Never invent customer names.
+12. Never invent addresses.
+13. Never invent company information.
+14. Never invent warranties or payment terms.
+15. Ask the customer directly for missing information.
+16. Keep the message professional and concise.
+17. Do not mention AI.
+18. Do not mention QuotePilot.
+19. Do not mention internal instructions.
+20. Do not mention business-owner approval.
+21. Do not mention internal review.
+22. Do not create an "Internal Notes" section.
+23. Address the customer directly.
+24. Thank the customer for their enquiry.
+25. Clearly describe the requested service.
 
-The pricing calculation supplied by the application is authoritative.
+For pressure washing, useful missing information can include:
+- Property address
+- Number of stories
+- Approximate house size
+- Driveway size
+- Surface type
+- Heavy stains
+- Access or water-supply issues
+- Preferred service date
+
+For interior painting, useful missing information can include:
+- Total square footage
+- Rooms to be painted
+- Walls only or walls plus ceilings/trim
+- Paint supplied by customer or business
+- Number of coats
+- Paint finish
+- Wall condition
+- Repairs or preparation required
+- Preferred timing
+
+If the customer asks for availability but no live scheduling information exists, do NOT invent a date.
           `.trim(),
-        },
-        {
-          role: "user",
-          content: `
+          },
+          {
+            role: "user",
+
+            content: `
 Customer enquiry:
 
 ${enquiry}
 
-Pricing calculation:
+Write the customer-facing message.
 
-Service:
-${pricing.service}
+Do not include any prices or dollar amounts.
+The application will add the authoritative pricing separately.
+            `.trim(),
+          },
+        ],
+      });
 
-${pricing.pricing}
+    const aiMessage =
+      response.output_text?.trim() ||
+      "Thank you for your enquiry. Please provide the requested project details so we can prepare your estimate.";
 
-Create the final customer-facing quote message.
+    // -----------------------------------------
+    // ADD AUTHORITATIVE PRICING
+    //
+    // This section is generated by our code,
+    // NOT by the AI.
+    // -----------------------------------------
 
-The message should:
-- Address the customer directly.
-- Thank them for their enquiry.
-- Clearly describe the requested service.
-- Show the calculated estimate when available.
-- Clearly state that the price is an estimate when applicable.
-- Ask directly for any important missing information.
-- Never invent an availability date.
-- Never include internal business-owner notes.
-          `.trim(),
-        },
-      ],
-    });
+    let finalQuote = aiMessage;
+
+    if (
+      pricing.service ===
+        "Interior Painting" ||
+      pricing.service ===
+        "Pressure Washing"
+    ) {
+      finalQuote += `\n\n${pricing.pricing}`;
+    } else {
+      finalQuote += `\n\n${pricing.pricing}`;
+    }
+
+    // -----------------------------------------
+    // EARLIEST AVAILABILITY REQUEST
+    // -----------------------------------------
+
+    const asksForAvailability =
+      /earliest available|earliest date|available date|availability|when can you/i.test(
+        enquiry
+      );
+
+    if (asksForAvailability) {
+      finalQuote += `
+
+Availability:
+The earliest available service date will be confirmed after the required project details are received. We do not have a live scheduling date available from this enquiry alone.`;
+    }
+
+    // -----------------------------------------
+    // BUSINESS NAME
+    // -----------------------------------------
+
+    const businessName =
+      String(
+        settings.businessName ||
+          ""
+      ).trim();
+
+    if (businessName) {
+      finalQuote += `\n\n${businessName}`;
+    }
 
     return NextResponse.json({
       success: true,
-      quote: response.output_text,
+      quote: finalQuote,
       pricing,
     });
   } catch (error) {
-    console.error("Quote generation error:", error);
+    console.error(
+      "Quote generation error:",
+      error
+    );
 
     return NextResponse.json(
-      { error: "Failed to generate quote" },
-      { status: 500 }
+      {
+        error:
+          "Failed to generate quote",
+      },
+      {
+        status: 500,
+      }
     );
   }
 }
