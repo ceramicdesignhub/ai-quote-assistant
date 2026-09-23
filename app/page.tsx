@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function Home() {
   const [enquiry, setEnquiry] = useState("");
@@ -8,11 +8,61 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [approved, setApproved] = useState(false);
   const [error, setError] = useState("");
+  const [saved, setSaved] = useState(false);
 
   const [businessName, setBusinessName] = useState("My Business");
   const [paintingRate, setPaintingRate] = useState("3.75");
   const [pressureWashRate, setPressureWashRate] = useState("325");
   const [drivewayRate, setDrivewayRate] = useState("175");
+
+  // Load saved business settings
+  useEffect(() => {
+    const savedSettings = localStorage.getItem("quotepilot-settings");
+
+    if (savedSettings) {
+      try {
+        const settings = JSON.parse(savedSettings);
+
+        if (settings.businessName !== undefined) {
+          setBusinessName(settings.businessName);
+        }
+
+        if (settings.paintingRate !== undefined) {
+          setPaintingRate(settings.paintingRate);
+        }
+
+        if (settings.pressureWashRate !== undefined) {
+          setPressureWashRate(settings.pressureWashRate);
+        }
+
+        if (settings.drivewayRate !== undefined) {
+          setDrivewayRate(settings.drivewayRate);
+        }
+      } catch {
+        console.error("Could not load saved settings.");
+      }
+    }
+  }, []);
+
+  function saveSettings() {
+    const settings = {
+      businessName,
+      paintingRate,
+      pressureWashRate,
+      drivewayRate,
+    };
+
+    localStorage.setItem(
+      "quotepilot-settings",
+      JSON.stringify(settings)
+    );
+
+    setSaved(true);
+
+    setTimeout(() => {
+      setSaved(false);
+    }, 2500);
+  }
 
   async function generateQuote() {
     if (!enquiry.trim()) {
@@ -45,13 +95,17 @@ export default function Home() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to generate quote.");
+        throw new Error(
+          data.error || "Failed to generate quote."
+        );
       }
 
       setQuote(data.quote);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Something went wrong."
+        err instanceof Error
+          ? err.message
+          : "Something went wrong."
       );
     } finally {
       setLoading(false);
@@ -62,6 +116,7 @@ export default function Home() {
     setEnquiry(
       "Hi, I need a quote to pressure wash a 3-bedroom house in Austin. Please include the driveway and tell me your earliest available date."
     );
+
     setQuote("");
     setApproved(false);
     setError("");
@@ -83,7 +138,13 @@ export default function Home() {
         fontFamily: "Arial, sans-serif",
       }}
     >
-      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+      <div
+        style={{
+          maxWidth: 1100,
+          margin: "0 auto",
+        }}
+      >
+        {/* HEADER */}
         <div style={{ marginBottom: 35 }}>
           <div
             style={{
@@ -94,7 +155,7 @@ export default function Home() {
               marginBottom: 10,
             }}
           >
-            AI QUOTE ASSISTANT
+            QUOTEPILOT
           </div>
 
           <h1
@@ -114,11 +175,11 @@ export default function Home() {
               marginTop: 12,
             }}
           >
-            QuotePilot extracts customer requirements and creates a
-            professional quote draft.
+            AI quoting assistant for service businesses.
           </p>
         </div>
 
+        {/* BUSINESS SETTINGS */}
         <section
           style={{
             background: "#ffffff",
@@ -128,17 +189,52 @@ export default function Home() {
             boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
           }}
         >
-          <h2 style={{ marginTop: 0 }}>Business pricing settings</h2>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 15,
+              marginBottom: 18,
+            }}
+          >
+            <div>
+              <h2 style={{ margin: 0 }}>
+                Business settings
+              </h2>
 
-          <p style={{ color: "#667085", marginTop: 0 }}>
-            Set your business rates. QuotePilot will use these rates when
-            calculating estimates.
-          </p>
+              <p
+                style={{
+                  color: "#667085",
+                  margin: "6px 0 0",
+                  fontSize: 14,
+                }}
+              >
+                Set your business name and pricing rates.
+              </p>
+            </div>
+
+            {saved && (
+              <div
+                style={{
+                  padding: "8px 12px",
+                  borderRadius: 8,
+                  background: "#ecfdf3",
+                  color: "#027a48",
+                  fontSize: 13,
+                  fontWeight: 700,
+                }}
+              >
+                ✓ Settings saved
+              </div>
+            )}
+          </div>
 
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(4, 1fr)",
+              gridTemplateColumns:
+                "repeat(4, minmax(0, 1fr))",
               gap: 14,
             }}
           >
@@ -169,8 +265,18 @@ export default function Home() {
               type="number"
             />
           </div>
+
+          <div style={{ marginTop: 18 }}>
+            <button
+              onClick={saveSettings}
+              style={primaryButton}
+            >
+              Save settings
+            </button>
+          </div>
         </section>
 
+        {/* MAIN WORKSPACE */}
         <div
           style={{
             display: "grid",
@@ -178,6 +284,7 @@ export default function Home() {
             gap: 24,
           }}
         >
+          {/* CUSTOMER ENQUIRY */}
           <section
             style={{
               background: "#ffffff",
@@ -186,11 +293,15 @@ export default function Home() {
               boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
             }}
           >
-            <h2 style={{ marginTop: 0 }}>Customer enquiry</h2>
+            <h2 style={{ marginTop: 0 }}>
+              Customer enquiry
+            </h2>
 
             <textarea
               value={enquiry}
-              onChange={(e) => setEnquiry(e.target.value)}
+              onChange={(e) =>
+                setEnquiry(e.target.value)
+              }
               placeholder="Paste the customer's enquiry here..."
               style={{
                 width: "100%",
@@ -201,6 +312,7 @@ export default function Home() {
                 fontSize: 15,
                 resize: "vertical",
                 boxSizing: "border-box",
+                fontFamily: "Arial, sans-serif",
               }}
             />
 
@@ -209,22 +321,34 @@ export default function Home() {
                 display: "flex",
                 gap: 10,
                 marginTop: 15,
+                flexWrap: "wrap",
               }}
             >
-              <button onClick={useExample} style={secondaryButton}>
+              <button
+                onClick={useExample}
+                style={secondaryButton}
+              >
                 Use example
               </button>
 
-              <button onClick={clearAll} style={secondaryButton}>
+              <button
+                onClick={clearAll}
+                style={secondaryButton}
+              >
                 Clear
               </button>
 
               <button
                 onClick={generateQuote}
                 disabled={loading}
-                style={primaryButton}
+                style={{
+                  ...primaryButton,
+                  opacity: loading ? 0.6 : 1,
+                }}
               >
-                {loading ? "Generating..." : "Generate quote"}
+                {loading
+                  ? "Generating..."
+                  : "Generate quote"}
               </button>
             </div>
 
@@ -243,6 +367,7 @@ export default function Home() {
             )}
           </section>
 
+          {/* QUOTE */}
           <section
             style={{
               background: "#ffffff",
@@ -251,7 +376,9 @@ export default function Home() {
               boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
             }}
           >
-            <h2 style={{ marginTop: 0 }}>Quote draft</h2>
+            <h2 style={{ marginTop: 0 }}>
+              Quote draft
+            </h2>
 
             {!quote && !loading && (
               <div
@@ -264,7 +391,8 @@ export default function Home() {
                   textAlign: "center",
                 }}
               >
-                Your AI-generated quote will appear here.
+                Your AI-generated quote will
+                appear here.
               </div>
             )}
 
@@ -276,6 +404,7 @@ export default function Home() {
                   alignItems: "center",
                   justifyContent: "center",
                   color: "#475467",
+                  textAlign: "center",
                 }}
               >
                 AI is analysing the enquiry...
@@ -306,9 +435,12 @@ export default function Home() {
                     ...primaryButton,
                     marginTop: 18,
                     width: "100%",
+                    opacity: approved ? 0.7 : 1,
                   }}
                 >
-                  {approved ? "Quote approved" : "Approve quote"}
+                  {approved
+                    ? "Quote approved"
+                    : "Approve quote"}
                 </button>
 
                 {approved && (
@@ -322,7 +454,8 @@ export default function Home() {
                       textAlign: "center",
                     }}
                   >
-                    Quote approved — ready to send.
+                    Quote approved — ready to
+                    send.
                   </div>
                 )}
               </>
@@ -372,7 +505,9 @@ function SettingInput({
       <input
         type={type}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) =>
+          onChange(e.target.value)
+        }
         style={{
           padding: 11,
           borderRadius: 9,
