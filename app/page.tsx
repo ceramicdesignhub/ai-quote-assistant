@@ -9,6 +9,11 @@ export default function Home() {
   const [approved, setApproved] = useState(false);
   const [error, setError] = useState("");
 
+  const [businessName, setBusinessName] = useState("My Business");
+  const [paintingRate, setPaintingRate] = useState("3.75");
+  const [pressureWashRate, setPressureWashRate] = useState("325");
+  const [drivewayRate, setDrivewayRate] = useState("175");
+
   async function generateQuote() {
     if (!enquiry.trim()) {
       setError("Please enter a customer enquiry.");
@@ -26,7 +31,15 @@ export default function Home() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ enquiry }),
+        body: JSON.stringify({
+          enquiry,
+          pricingSettings: {
+            businessName,
+            paintingRate: Number(paintingRate),
+            pressureWashRate: Number(pressureWashRate),
+            drivewayRate: Number(drivewayRate),
+          },
+        }),
       });
 
       const data = await response.json();
@@ -70,12 +83,7 @@ export default function Home() {
         fontFamily: "Arial, sans-serif",
       }}
     >
-      <div
-        style={{
-          maxWidth: 1100,
-          margin: "0 auto",
-        }}
-      >
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
         <div style={{ marginBottom: 35 }}>
           <div
             style={{
@@ -110,6 +118,58 @@ export default function Home() {
             professional quote draft.
           </p>
         </div>
+
+        <section
+          style={{
+            background: "#ffffff",
+            borderRadius: 16,
+            padding: 24,
+            marginBottom: 24,
+            boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
+          }}
+        >
+          <h2 style={{ marginTop: 0 }}>Business pricing settings</h2>
+
+          <p style={{ color: "#667085", marginTop: 0 }}>
+            Set your business rates. QuotePilot will use these rates when
+            calculating estimates.
+          </p>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(4, 1fr)",
+              gap: 14,
+            }}
+          >
+            <SettingInput
+              label="Business name"
+              value={businessName}
+              onChange={setBusinessName}
+            />
+
+            <SettingInput
+              label="Painting $ / sq ft"
+              value={paintingRate}
+              onChange={setPaintingRate}
+              type="number"
+            />
+
+            <SettingInput
+              label="House wash $"
+              value={pressureWashRate}
+              onChange={setPressureWashRate}
+              type="number"
+            />
+
+            <SettingInput
+              label="Driveway wash $"
+              value={drivewayRate}
+              onChange={setDrivewayRate}
+              type="number"
+            />
+          </div>
+        </section>
 
         <div
           style={{
@@ -151,17 +211,11 @@ export default function Home() {
                 marginTop: 15,
               }}
             >
-              <button
-                onClick={useExample}
-                style={secondaryButton}
-              >
+              <button onClick={useExample} style={secondaryButton}>
                 Use example
               </button>
 
-              <button
-                onClick={clearAll}
-                style={secondaryButton}
-              >
+              <button onClick={clearAll} style={secondaryButton}>
                 Clear
               </button>
 
@@ -288,6 +342,46 @@ export default function Home() {
         </p>
       </div>
     </main>
+  );
+}
+
+function SettingInput({
+  label,
+  value,
+  onChange,
+  type = "text",
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  type?: string;
+}) {
+  return (
+    <label
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 7,
+        color: "#344054",
+        fontSize: 13,
+        fontWeight: 600,
+      }}
+    >
+      {label}
+
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        style={{
+          padding: 11,
+          borderRadius: 9,
+          border: "1px solid #d0d5dd",
+          fontSize: 14,
+          boxSizing: "border-box",
+        }}
+      />
+    </label>
   );
 }
 
