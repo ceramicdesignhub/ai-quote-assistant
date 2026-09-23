@@ -783,3 +783,181 @@ footer span:first-child {
     margin-left: 0;
   }
 }
+/* QuotePilot PDF / Print */
+
+.printQuote {
+  display: none;
+}
+
+.customerDetails {
+  margin-top: 20px;
+  padding: 18px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #fafafa;
+}
+
+.customerDetailsTitle {
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+
+.customerGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.customerGrid label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.customerGrid label span {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.customerGrid input {
+  width: 100%;
+}
+
+.pdfActions {
+  margin-top: 18px;
+  padding: 18px;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.pdfActions p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 16mm;
+  }
+
+  body {
+    background: white !important;
+  }
+
+  .appShell {
+    background: white !important;
+  }
+
+  .noPrint {
+    display: none !important;
+  }
+
+  .printQuote {
+    display: block !important;
+    width: 100%;
+    min-height: 250mm;
+    background: white;
+    color: #111827;
+    font-family: Arial, Helvetica, sans-serif;
+  }
+
+  .printQuoteHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: 24px;
+    border-bottom: 2px solid #111827;
+  }
+
+  .printBusinessName {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+
+  .printSubtitle {
+    margin-top: 5px;
+    font-size: 13px;
+    color: #6b7280;
+  }
+
+  .printQuoteMeta {
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 12px;
+  }
+
+  .printQuoteMeta strong {
+    font-size: 18px;
+    margin-bottom: 4px;
+  }
+
+  .printCustomer {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    padding: 28px 0;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .printCustomer strong {
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: #6b7280;
+  }
+
+  .printCustomer p {
+    margin: 5px 0 0;
+    font-size: 13px;
+  }
+
+  .printQuoteBody {
+    padding: 30px 0;
+  }
+
+  .printQuoteBody h2 {
+    margin: 0 0 18px;
+    font-size: 20px;
+  }
+
+  .printQuoteText {
+    white-space: pre-wrap;
+    font-size: 13px;
+    line-height: 1.7;
+  }
+
+  .printFooter {
+    margin-top: 45px;
+    padding-top: 18px;
+    border-top: 1px solid #d1d5db;
+    display: flex;
+    justify-content: space-between;
+    gap: 30px;
+    font-size: 10px;
+    color: #6b7280;
+  }
+
+  .printFooter strong {
+    color: #111827;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 800px) {
+  .customerGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .pdfActions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

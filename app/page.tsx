@@ -11,10 +11,14 @@ type Settings = {
 
 type QuoteHistoryItem = {
   id: string;
+  quoteNumber: string;
   enquiry: string;
   quote: string;
   createdAt: string;
   approved: boolean;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
 };
 
 const defaultSettings: Settings = {
@@ -23,6 +27,24 @@ const defaultSettings: Settings = {
   pressureWashRate: 500,
   drivewayRate: 200,
 };
+
+function createQuoteNumber() {
+  const now = new Date();
+
+  const year = now.getFullYear();
+  const month = String(
+    now.getMonth() + 1
+  ).padStart(2, "0");
+  const day = String(
+    now.getDate()
+  ).padStart(2, "0");
+
+  const random = String(
+    Math.floor(Math.random() * 1000)
+  ).padStart(3, "0");
+
+  return `QP-${year}${month}${day}-${random}`;
+}
 
 export default function Home() {
   const [enquiry, setEnquiry] = useState("");
@@ -38,26 +60,50 @@ export default function Home() {
   const [history, setHistory] =
     useState<QuoteHistoryItem[]>([]);
 
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] =
+    useState(false);
+
+  const [customerName, setCustomerName] =
+    useState("");
+
+  const [customerEmail, setCustomerEmail] =
+    useState("");
+
+  const [customerPhone, setCustomerPhone] =
+    useState("");
+
+  const [quoteNumber, setQuoteNumber] =
+    useState("");
+
+  const [quoteDate, setQuoteDate] =
+    useState("");
 
   useEffect(() => {
     const savedSettings =
-      localStorage.getItem("quotepilot-settings");
+      localStorage.getItem(
+        "quotepilot-settings"
+      );
 
     if (savedSettings) {
       try {
-        setSettings(JSON.parse(savedSettings));
+        setSettings(
+          JSON.parse(savedSettings)
+        );
       } catch {
         // Ignore invalid settings.
       }
     }
 
     const savedHistory =
-      localStorage.getItem("quotepilot-history");
+      localStorage.getItem(
+        "quotepilot-history"
+      );
 
     if (savedHistory) {
       try {
-        setHistory(JSON.parse(savedHistory));
+        setHistory(
+          JSON.parse(savedHistory)
+        );
       } catch {
         // Ignore invalid history.
       }
@@ -100,13 +146,27 @@ export default function Home() {
     setApproved(false);
     setCopied(false);
 
+    setQuoteNumber(createQuoteNumber());
+
+    setQuoteDate(
+      new Date().toLocaleDateString(
+        "en-US",
+        {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        }
+      )
+    );
+
     try {
       const response = await fetch(
         "/api/generate-quote",
         {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type":
+              "application/json",
           },
           body: JSON.stringify({
             enquiry,
@@ -115,7 +175,8 @@ export default function Home() {
         }
       );
 
-      const data = await response.json();
+      const data =
+        await response.json();
 
       if (!response.ok) {
         throw new Error(
@@ -141,6 +202,10 @@ export default function Home() {
       "Hi, I need a quote to pressure wash a 3-bedroom house in Austin. Please include the driveway and tell me your earliest available date."
     );
 
+    setCustomerName("");
+    setCustomerEmail("");
+    setCustomerPhone("");
+
     setQuote("");
     setApproved(false);
     setCopied(false);
@@ -153,6 +218,12 @@ export default function Home() {
     setApproved(false);
     setCopied(false);
     setError("");
+
+    setCustomerName("");
+    setCustomerEmail("");
+    setCustomerPhone("");
+    setQuoteNumber("");
+    setQuoteDate("");
   }
 
   async function copyQuote() {
@@ -178,13 +249,38 @@ export default function Home() {
   function approveQuote() {
     if (!quote) return;
 
+    if (!quoteNumber) {
+      setQuoteNumber(
+        createQuoteNumber()
+      );
+    }
+
+    if (!quoteDate) {
+      setQuoteDate(
+        new Date().toLocaleDateString(
+          "en-US",
+          {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          }
+        )
+      );
+    }
+
     const newItem: QuoteHistoryItem = {
       id: `${Date.now()}`,
+      quoteNumber:
+        quoteNumber ||
+        createQuoteNumber(),
       enquiry,
       quote,
       createdAt:
         new Date().toLocaleString(),
       approved: true,
+      customerName,
+      customerEmail,
+      customerPhone,
     };
 
     const updatedHistory = [
@@ -208,6 +304,37 @@ export default function Home() {
     setEnquiry(item.enquiry);
     setQuote(item.quote);
     setApproved(item.approved);
+
+    setCustomerName(
+      item.customerName || ""
+    );
+
+    setCustomerEmail(
+      item.customerEmail || ""
+    );
+
+    setCustomerPhone(
+      item.customerPhone || ""
+    );
+
+    setQuoteNumber(
+      item.quoteNumber ||
+        createQuoteNumber()
+    );
+
+    setQuoteDate(
+      new Date(
+        item.createdAt
+      ).toLocaleDateString(
+        "en-US",
+        {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        }
+      )
+    );
+
     setCopied(false);
     setError("");
 
@@ -250,13 +377,24 @@ export default function Home() {
     });
   }
 
+  function printQuote() {
+    if (!quote) {
+      setError(
+        "Generate a quote before creating the PDF."
+      );
+      return;
+    }
+
+    window.print();
+  }
+
   return (
     <main className="appShell">
       <div className="container">
 
         {/* HEADER */}
 
-        <header className="topBar">
+        <header className="topBar noPrint">
 
           <div className="brand">
 
@@ -293,10 +431,11 @@ export default function Home() {
         {/* SETTINGS */}
 
         {settingsOpen && (
-          <section className="settingsPanel">
+          <section className="settingsPanel noPrint">
 
             <div className="settingsHeader">
               <div>
+
                 <div className="sectionEyebrow">
                   BUSINESS SETTINGS
                 </div>
@@ -310,6 +449,7 @@ export default function Home() {
                   by QuotePilot when
                   calculating estimates.
                 </p>
+
               </div>
             </div>
 
@@ -426,7 +566,7 @@ export default function Home() {
 
         {/* HERO */}
 
-        <section className="hero">
+        <section className="hero noPrint">
 
           <div className="heroBadge">
             <span className="statusDot" />
@@ -435,7 +575,10 @@ export default function Home() {
 
           <h1>
             Turn enquiries into
-            <span> ready-to-send quotes.</span>
+            <span>
+              {" "}
+              ready-to-send quotes.
+            </span>
           </h1>
 
           <p>
@@ -450,15 +593,16 @@ export default function Home() {
 
         {/* WORKSPACE */}
 
-        <section className="workspace">
+        <section className="workspace noPrint">
 
-          {/* LEFT */}
+          {/* CUSTOMER ENQUIRY */}
 
           <div className="panel">
 
             <div className="panelHead">
 
               <div>
+
                 <div className="sectionEyebrow">
                   STEP 01
                 </div>
@@ -471,6 +615,7 @@ export default function Home() {
                   Paste the customer's
                   message below.
                 </p>
+
               </div>
 
               <div className="stepNumber">
@@ -491,13 +636,16 @@ export default function Home() {
             />
 
             <div className="inputMeta">
+
               <span>
                 {enquiry.length} characters
               </span>
 
               <span>
-                AI will extract requirements
+                AI will extract
+                requirements
               </span>
+
             </div>
 
             <div className="buttonRow">
@@ -536,13 +684,14 @@ export default function Home() {
 
           </div>
 
-          {/* RIGHT */}
+          {/* QUOTE PREVIEW */}
 
           <div className="panel">
 
             <div className="panelHead">
 
               <div>
+
                 <div className="sectionEyebrow">
                   STEP 02
                 </div>
@@ -555,6 +704,7 @@ export default function Home() {
                   Review before sending
                   to the customer.
                 </p>
+
               </div>
 
               <div className="draftBadge">
@@ -605,6 +755,77 @@ export default function Home() {
 
             {quote && (
               <>
+
+                {/* CUSTOMER DETAILS */}
+
+                <div className="customerDetails">
+
+                  <div className="customerDetailsTitle">
+                    Customer details
+                  </div>
+
+                  <div className="customerGrid">
+
+                    <label>
+                      <span>
+                        Customer name
+                      </span>
+
+                      <input
+                        value={
+                          customerName
+                        }
+                        onChange={(e) =>
+                          setCustomerName(
+                            e.target.value
+                          )
+                        }
+                        placeholder="John Smith"
+                      />
+                    </label>
+
+                    <label>
+                      <span>
+                        Email
+                      </span>
+
+                      <input
+                        type="email"
+                        value={
+                          customerEmail
+                        }
+                        onChange={(e) =>
+                          setCustomerEmail(
+                            e.target.value
+                          )
+                        }
+                        placeholder="customer@email.com"
+                      />
+                    </label>
+
+                    <label>
+                      <span>
+                        Phone
+                      </span>
+
+                      <input
+                        value={
+                          customerPhone
+                        }
+                        onChange={(e) =>
+                          setCustomerPhone(
+                            e.target.value
+                          )
+                        }
+                        placeholder="+1 555 123 4567"
+                      />
+                    </label>
+
+                  </div>
+
+                </div>
+
+                {/* QUOTE CARD */}
 
                 <div className="quoteCard">
 
@@ -658,6 +879,7 @@ export default function Home() {
 
                 {approved && (
                   <div className="approvedBox">
+
                     <span>✓</span>
 
                     <div>
@@ -666,13 +888,41 @@ export default function Home() {
                       </strong>
 
                       <p>
-                        Saved to quote
-                        history and ready
-                        to send.
+                        Quote{" "}
+                        {quoteNumber ||
+                          "created"}{" "}
+                        is ready for
+                        customer delivery.
                       </p>
                     </div>
+
                   </div>
                 )}
+
+                {/* PDF ACTION */}
+
+                <div className="pdfActions">
+
+                  <div>
+                    <strong>
+                      Professional PDF
+                    </strong>
+
+                    <p>
+                      Print or save this
+                      approved quote as
+                      a customer-ready PDF.
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={printQuote}
+                    className="primary"
+                  >
+                    Download / Save PDF
+                  </button>
+
+                </div>
 
               </>
             )}
@@ -681,14 +931,124 @@ export default function Home() {
 
         </section>
 
+        {/* PRINTABLE QUOTE */}
+
+        {quote && (
+          <section className="printQuote">
+
+            <div className="printQuoteHeader">
+
+              <div>
+                <div className="printBusinessName">
+                  {settings.businessName}
+                </div>
+
+                <div className="printSubtitle">
+                  Professional Service Estimate
+                </div>
+              </div>
+
+              <div className="printQuoteMeta">
+
+                <strong>
+                  QUOTE
+                </strong>
+
+                <span>
+                  {quoteNumber}
+                </span>
+
+                <span>
+                  {quoteDate}
+                </span>
+
+              </div>
+
+            </div>
+
+            <div className="printCustomer">
+
+              <div>
+
+                <strong>
+                  PREPARED FOR
+                </strong>
+
+                <p>
+                  {customerName ||
+                    "Customer"}
+                </p>
+
+                {customerEmail && (
+                  <p>
+                    {customerEmail}
+                  </p>
+                )}
+
+                {customerPhone && (
+                  <p>
+                    {customerPhone}
+                  </p>
+                )}
+
+              </div>
+
+              <div>
+
+                <strong>
+                  STATUS
+                </strong>
+
+                <p>
+                  {approved
+                    ? "Approved Estimate"
+                    : "Draft Estimate"}
+                </p>
+
+              </div>
+
+            </div>
+
+            <div className="printQuoteBody">
+
+              <h2>
+                Service Estimate
+              </h2>
+
+              <div className="printQuoteText">
+                {quote}
+              </div>
+
+            </div>
+
+            <div className="printFooter">
+
+              <strong>
+                {settings.businessName}
+              </strong>
+
+              <span>
+                This document contains
+                an estimate only. Final
+                pricing is subject to
+                confirmed scope and
+                site conditions.
+              </span>
+
+            </div>
+
+          </section>
+        )}
+
         {/* HISTORY */}
 
         {history.length > 0 && (
-          <section className="panel historyPanel">
+          <section className="panel historyPanel noPrint">
 
             <div className="panelHead">
 
               <div>
+
                 <div className="sectionEyebrow">
                   QUOTE HISTORY
                 </div>
@@ -698,10 +1058,12 @@ export default function Home() {
                 </h2>
 
                 <p>
-                  Your latest generated and
-                  approved quotes are saved
-                  on this browser.
+                  Your latest generated
+                  and approved quotes
+                  are saved on this
+                  browser.
                 </p>
+
               </div>
 
               <button
@@ -724,6 +1086,7 @@ export default function Home() {
                   <div className="historyInfo">
 
                     <div className="historyStatus">
+
                       <span
                         className={
                           item.approved
@@ -737,8 +1100,13 @@ export default function Home() {
                       </span>
 
                       <span>
+                        {item.quoteNumber}
+                      </span>
+
+                      <span>
                         {item.createdAt}
                       </span>
+
                     </div>
 
                     <div className="historyEnquiry">
@@ -783,9 +1151,10 @@ export default function Home() {
 
         {/* FOOTER */}
 
-        <footer className="footer">
+        <footer className="footer noPrint">
 
           <div>
+
             <strong>
               QuotePilot
             </strong>
@@ -794,6 +1163,7 @@ export default function Home() {
               AI-assisted quoting with
               human approval.
             </span>
+
           </div>
 
           <span>
