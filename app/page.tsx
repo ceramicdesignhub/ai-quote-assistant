@@ -33,7 +33,7 @@ export default function Home() {
       try {
         setSettings(JSON.parse(savedSettings));
       } catch {
-        // Ignore invalid saved settings
+        // Ignore invalid settings.
       }
     }
   }, []);
@@ -47,20 +47,26 @@ export default function Home() {
   }
 
   function saveSettings() {
-    localStorage.setItem("quotepilot-settings", JSON.stringify(settings));
+    localStorage.setItem(
+      "quotepilot-settings",
+      JSON.stringify(settings)
+    );
+
     setSaved(true);
 
-    setTimeout(() => {
+    window.setTimeout(() => {
       setSaved(false);
     }, 2500);
   }
 
   function useExample() {
     setEnquiry(
-      "Customer needs 500 sq ft interior painting in Austin. White color. Wants it completed next week. Please send price."
+      "Hi, I need a quote to pressure wash a 3-bedroom house in Austin. Please include the driveway and tell me your earliest available date."
     );
+
     setQuote("");
     setApproved(false);
+    setCopied(false);
     setError("");
   }
 
@@ -104,7 +110,9 @@ export default function Home() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data?.error || "Failed to generate quote.");
+        throw new Error(
+          data?.error || "Failed to generate quote."
+        );
       }
 
       setQuote(data.quote || "");
@@ -126,11 +134,13 @@ export default function Home() {
       await navigator.clipboard.writeText(quote);
       setCopied(true);
 
-      setTimeout(() => {
+      window.setTimeout(() => {
         setCopied(false);
       }, 2000);
     } catch {
-      setError("Could not copy the quote. Please copy it manually.");
+      setError(
+        "Could not copy the quote. Please copy it manually."
+      );
     }
   }
 
@@ -142,16 +152,14 @@ export default function Home() {
   return (
     <main className="app">
       <div className="shell">
-
-        {/* NAVIGATION */}
         <header className="nav">
           <div className="brand">
             <div className="brandMark">Q</div>
 
             <div>
-              <div>QUOTEPILOT</div>
+              <div className="brandName">QUOTEPILOT</div>
               <div className="brandSub">
-                AI quoting assistant
+                AI quoting assistant for service businesses
               </div>
             </div>
           </div>
@@ -162,7 +170,6 @@ export default function Home() {
           </div>
         </header>
 
-        {/* HERO */}
         <section className="hero">
           <div>
             <p className="eyebrow">QUOTE AUTOMATION</p>
@@ -174,31 +181,33 @@ export default function Home() {
             </h1>
 
             <p className="heroCopy">
-              Paste a customer enquiry, let QuotePilot calculate the estimate,
-              and review a professional quote before sending it.
+              Capture the customer request, calculate your estimate,
+              and create a professional quote in seconds.
             </p>
           </div>
 
           <div className="heroBadge">
-            <strong>AI-powered</strong>
-            <span>Human approval stays in control.</span>
+            <strong>Fast. Consistent. Human-controlled.</strong>
+            <span>
+              QuotePilot assists with the quote — you stay in control
+              before anything is sent.
+            </span>
           </div>
         </section>
 
-        {/* BUSINESS SETTINGS */}
         <section className="settingsPanel">
           <div className="settingsHeader">
             <div>
               <p className="sectionEyebrow">BUSINESS PROFILE</p>
-              <h2>Business settings</h2>
+              <h2>Pricing & business settings</h2>
               <p>
-                Configure your business identity and default pricing.
+                These values are used when QuotePilot calculates estimates.
               </p>
             </div>
 
             {saved && (
               <div className="savedMessage">
-                ✓ Settings saved
+                ✓ Saved
               </div>
             )}
           </div>
@@ -213,7 +222,7 @@ export default function Home() {
             />
 
             <SettingInput
-              label="Painting"
+              label="Interior painting"
               prefix="$"
               suffix="/ sq ft"
               type="number"
@@ -224,7 +233,7 @@ export default function Home() {
             />
 
             <SettingInput
-              label="House wash"
+              label="House pressure wash"
               prefix="$"
               type="number"
               value={settings.pressureWashRate}
@@ -234,7 +243,7 @@ export default function Home() {
             />
 
             <SettingInput
-              label="Driveway wash"
+              label="Driveway pressure wash"
               prefix="$"
               type="number"
               value={settings.drivewayRate}
@@ -246,7 +255,7 @@ export default function Home() {
 
           <div className="settingsFooter">
             <span>
-              Rates are used automatically when generating estimates.
+              Your saved settings stay on this browser.
             </span>
 
             <button
@@ -258,24 +267,21 @@ export default function Home() {
           </div>
         </section>
 
-        {/* WORKSPACE */}
         <section className="workspace">
-
-          {/* CUSTOMER ENQUIRY */}
           <div className="panel">
             <div className="panelHead">
               <div>
-                <div className="sectionEyebrow">INPUT</div>
+                <p className="sectionEyebrow">STEP 01 · INPUT</p>
 
                 <h2>Customer enquiry</h2>
 
                 <p>
-                  Paste the customer's message below.
+                  Paste the customer's message exactly as received.
                 </p>
               </div>
 
               <div className="counter">
-                {enquiry.length} characters
+                {enquiry.length} chars
               </div>
             </div>
 
@@ -285,7 +291,7 @@ export default function Home() {
                 setEnquiry(e.target.value);
                 setError("");
               }}
-              placeholder="Example: Customer needs 500 sq ft interior painting in Austin..."
+              placeholder="Example: Hi, I need a quote to pressure wash a 3-bedroom house..."
             />
 
             <div className="actions">
@@ -306,7 +312,7 @@ export default function Home() {
               <button
                 onClick={generateQuote}
                 disabled={loading}
-                className="primary"
+                className="primary generateBtn"
               >
                 {loading ? "Generating..." : "Generate quote →"}
               </button>
@@ -314,39 +320,37 @@ export default function Home() {
 
             {error && (
               <div className="errorBox">
-                {error}
+                <strong>Something needs attention</strong>
+                <span>{error}</span>
               </div>
             )}
 
             <p className="demoNote">
-              QuotePilot uses your configured pricing and does not invent
-              prices.
+              QuotePilot uses your configured business rates and does not
+              invent pricing.
             </p>
           </div>
 
-          {/* QUOTE PREVIEW */}
           <div className="panel">
             <div className="panelHead">
               <div>
-                <div className="sectionEyebrow">OUTPUT</div>
+                <p className="sectionEyebrow">STEP 02 · OUTPUT</p>
 
                 <h2>Quote preview</h2>
 
                 <p>
-                  Review before sending to the customer.
+                  Review the AI-generated quote before approval.
                 </p>
               </div>
 
               {quote && (
-                approved ? (
-                  <span className="approved">
-                    APPROVED
-                  </span>
-                ) : (
-                  <span className="review">
-                    DRAFT
-                  </span>
-                )
+                <span
+                  className={
+                    approved ? "approved" : "review"
+                  }
+                >
+                  {approved ? "APPROVED" : "DRAFT"}
+                </span>
               )}
             </div>
 
@@ -355,12 +359,18 @@ export default function Home() {
                 <div className="emptyIcon">✦</div>
 
                 <strong>
-                  Your AI-generated quote will appear here.
+                  Your quote will appear here
                 </strong>
 
                 <span>
-                  Enter an enquiry and click Generate quote.
+                  Generate a quote from the customer enquiry.
                 </span>
+
+                <div className="emptySteps">
+                  <span>1. Paste enquiry</span>
+                  <span>2. Generate</span>
+                  <span>3. Review</span>
+                </div>
               </div>
             )}
 
@@ -373,11 +383,11 @@ export default function Home() {
                 </div>
 
                 <strong>
-                  Creating your quote...
+                  Creating your quote
                 </strong>
 
                 <span>
-                  Calculating pricing and preparing the customer message.
+                  Analysing requirements and calculating pricing...
                 </span>
               </div>
             )}
@@ -417,12 +427,11 @@ export default function Home() {
 
                     <div>
                       <strong>
-                        Human review required
+                        Review before sending
                       </strong>
 
                       <p>
-                        Review the estimate and customer details before
-                        sending.
+                        Confirm customer details, scope, pricing and timing.
                       </p>
                     </div>
                   </div>
@@ -439,9 +448,7 @@ export default function Home() {
                   <button
                     onClick={approveQuote}
                     className={
-                      approved
-                        ? "approvedBtn"
-                        : "primary"
+                      approved ? "approvedBtn" : "primary"
                     }
                   >
                     {approved
@@ -453,12 +460,11 @@ export default function Home() {
                 {approved && (
                   <div className="successBox">
                     <strong>
-                      Quote approved — ready to send.
+                      Ready to send
                     </strong>
 
                     <span>
-                      Email sending can be connected as the next workflow
-                      step.
+                      The quote has been reviewed and approved.
                     </span>
                   </div>
                 )}
@@ -468,7 +474,8 @@ export default function Home() {
         </section>
 
         <footer>
-          QuotePilot · AI-assisted quoting · Human approval stays in the loop.
+          <span>QUOTEPILOT</span>
+          <span>AI-assisted quoting · Human approval required</span>
         </footer>
       </div>
     </main>
