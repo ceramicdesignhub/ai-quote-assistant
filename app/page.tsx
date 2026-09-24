@@ -7,6 +7,7 @@ type Settings = {
   paintingRate: number;
   pressureWashRate: number;
   drivewayRate: number;
+  cleaningRate: number;
 };
 
 type QuoteHistoryItem = {
@@ -26,6 +27,7 @@ const defaultSettings: Settings = {
   paintingRate: 10,
   pressureWashRate: 500,
   drivewayRate: 200,
+  cleaningRate: 0.50,
 };
 
 function createQuoteNumber() {
@@ -86,9 +88,10 @@ export default function Home() {
 
     if (savedSettings) {
       try {
-        setSettings(
-          JSON.parse(savedSettings)
-        );
+        setSettings({
+          ...defaultSettings,
+          ...JSON.parse(savedSettings),
+        });
       } catch {
         // Ignore invalid settings.
       }
@@ -531,6 +534,27 @@ export default function Home() {
                   onChange={(e) =>
                     updateSetting(
                       "drivewayRate",
+                      e.target.value
+                    )
+                  }
+                />
+              </label>
+
+              <label>
+                <span>
+                  Office cleaning ($ / sq ft)
+                </span>
+
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={
+                    settings.cleaningRate
+                  }
+                  onChange={(e) =>
+                    updateSetting(
+                      "cleaningRate",
                       e.target.value
                     )
                   }
